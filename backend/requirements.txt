@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+httpx
+python-multipart
+pydantic>=2.13
+pydantic-settings
+python-dotenv
+beautifulsoup4
+email-validator
