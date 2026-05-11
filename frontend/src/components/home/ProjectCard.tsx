@@ -55,12 +55,13 @@ interface ProjectCardProps {
 function EnvironmentRow({ env, project }: { env: EnvironmentSummary; project: ProjectResponse }) {
   const navigate = useNavigate();
   const isRedirect = !!env.redirect_to;
-  const isDisabled = !env.sender && !isRedirect;
+  const hasSenders = !!(env.senders && env.senders.length > 0);
+  const isDisabled = !hasSenders && !isRedirect;
 
   const handleClick = () => {
     if (isRedirect && env.redirect_to) {
       navigate(`/inbox/${project.id}/${slugify(env.redirect_to + ' environment')}`);
-    } else if (env.sender) {
+    } else if (hasSenders) {
       navigate(`/inbox/${project.id}/${slugify(env.name)}`);
     }
   };
@@ -73,7 +74,7 @@ function EnvironmentRow({ env, project }: { env: EnvironmentSummary; project: Pr
             onClick={handleClick}
             className={clsx(
               'text-sm font-medium text-left transition-colors',
-              isRedirect || env.sender
+              isRedirect || hasSenders
                 ? 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer'
                 : 'text-gray-400 dark:text-gray-500 cursor-default'
             )}
@@ -100,10 +101,10 @@ function EnvironmentRow({ env, project }: { env: EnvironmentSummary; project: Pr
         </div>
       </td>
       <td className="px-6 py-3.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-        {env.sender ? env.message_count.toLocaleString() : <span className="text-gray-400 dark:text-gray-600">—</span>}
+        {hasSenders ? env.message_count.toLocaleString() : <span className="text-gray-400 dark:text-gray-600">—</span>}
       </td>
       <td className="px-6 py-3.5 text-sm text-gray-600 dark:text-gray-400">
-        {env.sender ? env.messages_limit.toLocaleString() : <span className="text-gray-400 dark:text-gray-600">—</span>}
+        {hasSenders ? env.messages_limit.toLocaleString() : <span className="text-gray-400 dark:text-gray-600">—</span>}
       </td>
       <td className="px-6 py-3.5 text-sm text-gray-500 dark:text-gray-500">
         {env.last_message ? formatRelativeTime(env.last_message) : <span className="text-gray-400 dark:text-gray-600">—</span>}

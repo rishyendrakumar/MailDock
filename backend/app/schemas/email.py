@@ -41,7 +41,7 @@ class EmailListResponse(BaseModel):
 
 class EnvironmentSummary(BaseModel):
     name: str
-    sender: Optional[str] = None
+    senders: list[str] = []
     redirect_to: Optional[str] = None
     redirect_message: Optional[str] = None
     total_sent: int = 0

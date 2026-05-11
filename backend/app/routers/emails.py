@@ -1,6 +1,7 @@
 """
 /emails router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse, StreamingResponse
 from typing import Optional
@@ -12,22 +13,22 @@ from app.config.projects import PROJECTS
 router = APIRouter(prefix="/emails", tags=["emails"])
 
 
-def _sender_for(project_id: str, environment: str) -> Optional[str]:
-    """Look up the sender for a given project/environment pair."""
+def _senders_for(project_id: str, environment: str) -> list[str]:
+    """Look up all senders for a given project/environment pair."""
     proj = next((p for p in PROJECTS if p.id == project_id), None)
     if proj is None:
-        return None
+        return []
     env = next((e for e in proj.environments if e.name.lower() == environment.lower()), None)
     if env is None:
-        return None
+        return []
     # If this env redirects, follow the redirect
     if env.redirect_to:
         target_env = next(
             (e for e in proj.environments if e.name.lower().startswith(env.redirect_to.lower())),
             None,
         )
-        return target_env.sender if target_env else None
-    return env.sender
+        return target_env.senders if target_env else []
+    return env.senders
 
 
 @router.get("", response_model=EmailListResponse)
@@ -38,20 +39,33 @@ async def list_emails(
     search: Optional[str] = Query(None),
     limit: int = Query(200, ge=1, le=500),
 ):
-    # Resolve sender from project/environment if not explicitly provided
-    resolved_sender = sender
-    if not resolved_sender and project and environment:
-        resolved_sender = _sender_for(project, environment)
+    # Resolve senders from project/environment if not explicitly provided
+    resolved_senders: list[str] = []
+    if sender:
+        resolved_senders = [sender]
+    elif project and environment:
+        resolved_senders = _senders_for(project, environment)
 
     try:
-        raw = await smtp_bucket.fetch_emails(
-            sender=resolved_sender,
-            limit=limit,
-        )
+        if resolved_senders:
+            results = await asyncio.gather(*[
+                smtp_bucket.fetch_emails(sender=s, limit=limit)
+                for s in resolved_senders
+            ])
+            seen_ids: set[str] = set()
+            emails_raw: list = []
+            for raw in results:
+                for e in raw.get("emails", []):
+                    eid = str(e.get("id") or e.get("_id") or "")
+                    if eid not in seen_ids:
+                        seen_ids.add(eid)
+                        emails_raw.append(e)
+            emails_raw.sort(key=lambda e: e.get("timeCreated", ""), reverse=True)
+        else:
+            raw = await smtp_bucket.fetch_emails(limit=limit)
+            emails_raw = raw.get("emails", [])
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"SMTP Bucket error: {exc}")
-
-    emails_raw: list = raw.get("emails", [])
 
     # Apply search filter
     if search:

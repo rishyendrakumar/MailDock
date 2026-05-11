@@ -4,9 +4,13 @@ from pydantic import BaseModel
 
 class EnvironmentConfig(BaseModel):
     name: str
-    sender: Optional[str] = None
+    senders: list[str] = []
     redirect_to: Optional[str] = None
     redirect_message: Optional[str] = None
+
+    @property
+    def sender(self) -> Optional[str]:
+        return self.senders[0] if self.senders else None
 
 
 class ProjectConfig(BaseModel):
@@ -23,17 +27,17 @@ PROJECTS: list[ProjectConfig] = [
         environments=[
             EnvironmentConfig(
                 name="Dev Environment",
-                sender="no-reply@email.kekad.com",
+                senders=["no-reply@email.kekad.com", "no-reply@dev.simha.in"],
             ),
             EnvironmentConfig(
                 name="Stage Environment",
-                sender=None,
+                senders=[],
                 redirect_to=None,
                 redirect_message="Stage environment emails are currently categorized under Dev Environment inbox.",
             ),
             EnvironmentConfig(
                 name="UAT Environment",
-                sender="no-reply@stage.simha.in",
+                senders=["no-reply@stage.simha.in"],
             ),
         ],
     ),
@@ -43,15 +47,15 @@ PROJECTS: list[ProjectConfig] = [
         environments=[
             EnvironmentConfig(
                 name="Dev Environment",
-                sender="no-reply@simha.in",
+                senders=["no-reply@simha.in"],
             ),
             EnvironmentConfig(
                 name="Stage Environment",
-                sender=None,
+                senders=[],
             ),
             EnvironmentConfig(
                 name="UAT Environment",
-                sender="no-reply@stage.simha.in",
+                senders=["no-reply@stage.simha.in"],
             ),
         ],
     ),

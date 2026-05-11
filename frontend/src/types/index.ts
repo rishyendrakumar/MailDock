@@ -37,7 +37,7 @@ export interface EmailListResponse {
 
 export interface EnvironmentSummary {
   name: string;
-  sender?: string;
+  senders?: string[];
   redirect_to?: string;
   redirect_message?: string;
   total_sent: number;
